@@ -4,6 +4,8 @@ import torch.nn.functional as F
 
 
 
+
+
 class Net(nn.Module):
 
     def __init__(self):
@@ -159,3 +161,20 @@ class Lambda(nn.Module):
 
 def preprocess(x):
     return x.view(1, 2772)
+
+
+if __name__ == "main":
+
+    x_train = np.array()
+    eventFile = open("../cahuilla_events.txt","r")
+    for line in csv.reader(eventFile):
+        x = line[0].split(" ")
+        path = "../eqdata/" + x[0] + "/" + x[0] + x[1] + "/" + x[6]
+        st = read(path)
+        x_i = []
+        for i in range(len(st)):
+            x_i.append(st[i])
+        x_train.append(x_i)
+
+
+
