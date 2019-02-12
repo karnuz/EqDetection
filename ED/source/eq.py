@@ -167,11 +167,24 @@ if __name__ == "main":
 
     x_train = np.array()
     eventFile = open("../cahuilla_events.txt","r")
-    for line in csv.reader(eventFile):
+    buf = csv.reader(eventFile)
+    x = buf[0].split(" ")
+    path = "../eqdata/" + x[0] + "/" + x[0] + x[1] + "/" + x[6]
+    st = read(path)
+    headers = list(st[0].stats.keys())
+    items = list(st[0].stats.values())
+    df =  pd.DataFrame(columns=headers)
+    df.append(items)
+    
+    for line in buf:
         x = line[0].split(" ")
         path = "../eqdata/" + x[0] + "/" + x[0] + x[1] + "/" + x[6]
         st = read(path)
-        x_i = []
+        items = list(st[0].stats.values())
+        df.append(items)
+        
+
+        x_train = np.zeros((164,2520))
         for i in range(len(st)):
             x_i.append(st[i])
         x_train.append(x_i)
