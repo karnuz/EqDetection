@@ -4,58 +4,10 @@ import torch.nn.functional as F
 
 
 
-
-
-class Net(nn.Module):
-
-    def __init__(self):
-        self.conv1 = nn.Conv2d(3,64,3,padding=1)
-        self.conv2 = nn.Conv2d(64,64,3,padding=1)
-
-        self.maxPool1 = nn.MaxPool2d((1,4))
-
-        self.conv3 = nn.Conv2d(64,128,3,padding=1)
-        self.conv4 = nn.Conv2d(128,128,3,padding=1)
-
-        self.maxPool2 = nn.MaxPool2d((1,4))
-
-        self.conv5 = nn.Conv2d(128,256,3,padding=1)
-        self.conv6 = nn.Conv2d(256,256,3,padding=1)
-
-        self.maxPool3 = nn.MaxPool2d((2,4))
-
-        self.conv7 = nn.Conv2d(256,512,3,padding=1)
-        self.conv8 = nn.Conv2d(512,512,3,padding=1)
-        
-        self.maxPool4 = nn.MaxPool2d((3,4))
-
-        self.conv9 = nn.Conv2d(512,1024,3,padding=1)
-        self.conv10 = nn.Conv2d(1024,1024,3,padding=1)
-
-        self.upsample1 = nn.Upsample((4,2))
-        
-        self.conv11 = nn.Conv2d(1024,512,3,padding=1)
-        self.conv12 = nn.Conv2d(512,512,3,padding=1)
-        self.conv13 = nnConv2d(512,512,3,padding=1)
-
-        self.upsampe2 = nn.Upsample((2,2))
-        
-        self.conv14 = nn.Conv2d(512,256,3,padding=1)
-        self.conv15 = nn.Conv2d(256,256,3,padding=1)
-        self.conv16 = nn.Conv2d(256,256,3,padding=1)
-
-        self.upsample3 = nn.Upsample((2,2))
-        
-        self.conv17 = nn.Conv2d(256,128,3,padding=1)
-        self.conv18 = nn.Conv2d(128,64,3,padding=1)
-        self.conv19 = nn.Conv2d(64,64,3,padding=1)
-        self.conv20 = nn.Conv2d(64,32,3,padding=1)
-        self.conv21 = nn.Conv2d(32,30,3,padding=1)
-
 def labelProb(hypocenter, region, dimensions):
     pArray = np.array(dimensions)
     grid = np.array(dimensions)
-    latitudes, latstep = np.linspace(region[0][0],region[0][1], dimension[0],endpoint=False,retstep=True) 
+    latitudes, latstep = np.linspace(region[0][0],region[0][1], dimension[0],endpoint=False,retstep=True)
     longitudes, longstep = np.linspace(region[1][0],region[1][1], dimension[1],endpoint=False,retstep=True)
     depths, depthstep = np.linspace(region[2][0],region[2][1], dimension[2],endpoint=False,retstep=True)
     for i in range(dimensions[2]):
@@ -78,18 +30,25 @@ def sqdistance(point1, point2):
     return xd*xd + yd*yd + zd*zd
 
 
-
 def makeLabels():
     ##read /Users/himanshusharma/karnuz/Rose/files
     ## load label data
     ## make a 1d array of probGrid
 
+class Lambda(nn.Module):
+    def __init__(self, func):
+        super().__init__()
+        self.func = func
 
-in __name__ == "main":
+    def forward(self, x):
+        return self.func(x)
 
 
-    
-    target = labelProb()
+def preprocess(x):
+    return x.view(1, 2772)
+
+
+def getEqModel():
 
     model = nn.Sequential(
         Lambda(preprocess),
@@ -143,24 +102,36 @@ in __name__ == "main":
         nn.Conv2d(32, 30, kernel_size=3, padding=1),
         Lambda(lambda x: x.view(-1,128,80))
     )
-
-    opt = optim.SGD(model.parameters(),lr=lr)
-    opt(,loss_func(),)
+    return model
     
 
-def loss_func = torch.nn.functional.binary_cross_entropy(input, target) 
+def loss_func = torch.nn.functional.binary_cross_entropy(input, target)
 
-class Lambda(nn.Module):
-    def __init__(self, func):
-        super().__init__()
-        self.func = func
+def loss_batch(model, loss_func, xb, yb, opt=None):
+    loss = loss_func(model(xb), yb)
 
-    def forward(self, x):
-        return self.func(x)
+    if opt is not None:
+        loss.backward()
+        opt.step()
+        opt.zero_grad()
+        
+    return loss.item(), len(xb)
 
 
-def preprocess(x):
-    return x.view(1, 2772)
+def fit(epochs, model, loss_func, opt, train_dl, valid_dl):
+    for epoch in range(epochs):
+        model.train()
+        for xb, yb in train_dl:
+            loss_batch(model, loss_func, xb, yb, opt)
+
+        model.eval()
+        with torch.no_grad():
+            losses, nums = zip(
+                loss_batch(model, loss_func, xb, yb) for xb, yb in valid_dl]
+            )
+        val_loss = np.sum(np.multiply(losses, nums)) / np.sum(nums)
+
+        print(epoch, val_loss)
 
 
 if __name__ == "main":
@@ -189,5 +160,6 @@ if __name__ == "main":
             x_i.append(st[i])
         x_train.append(x_i)
 
-
+    model = getEqModel()
+    opt = optim.SGD(model.parameters(),lr=lr)
 
