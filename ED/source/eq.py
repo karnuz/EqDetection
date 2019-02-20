@@ -5,23 +5,27 @@ import torch.nn.functional as F
 
 
 def labelProb(hypocenter, region, dimensions):
+    #region [[latitudemin,latitudemax],[longitudemin,longitudemax],[depthmin,depthmax]]
+    #dimensions: dimension of the discreteblock in which we calculate probability
     pArray = np.array(dimensions)
     grid = np.array(dimensions)
     latitudes, latstep = np.linspace(region[0][0],region[0][1], dimension[0],endpoint=False,retstep=True)
     longitudes, longstep = np.linspace(region[1][0],region[1][1], dimension[1],endpoint=False,retstep=True)
     depths, depthstep = np.linspace(region[2][0],region[2][1], dimension[2],endpoint=False,retstep=True)
-    for i in range(dimensions[2]):
-        for j in range(dimensions[0]):
-            for k in range(dimensions[1]):
-                grid[i][j][k] = (depths[i]+depthstep,latitudes[j]+latstep,longitudes[k]+longstep)
-                pArray[i][j][k] = self.pMag(hypocenter,grid[i][j][k])
+    for i in range(dimensions[2]): #depth  
+        for j in range(dimensions[0]): #latitude
+            for k in range(dimensions[1]): #longitude
+                grid[i][j][k] = (depths[i]+depthstep/2,latitudes[j]+latstep/2,longitudes[k]+longstep/2)
+                pArray[i][j][k] = pMag(hypocenter,grid[i][j][k])
     
 def pMag(hypocenter, point):
-    d = self.sqdistance(hypocenter, point)
+    d = sqdistance(hypocenter, point)
     return np.exp(-d/r)
     
 
 def sqdistance(point1, point2):
+    #point[0]:depth, point[1]=phi  point[2]=theta
+    R = 6378.137
     x1,y1,z1 = (R-point1[0])*cos(point1[1])*cos(point1[2]),(R-point1[0])*cos(point1[1])*sin(point1[2]),(R-point1[0]*sin(point1[1]))
     x2,y2,z2 = (R-point2[0])*cos(point2[1])*cos(point2[2]),(R-point2[0])*cos(point2[1])*sin(point2[2]),(R-point2[0]*sin(point2[1]))
     xd = x2-x1
@@ -30,7 +34,7 @@ def sqdistance(point1, point2):
     return xd*xd + yd*yd + zd*zd
 
 
-def makeLabels():
+#def makeLabels():
     ##read /Users/himanshusharma/karnuz/Rose/files
     ## load label data
     ## make a 1d array of probGrid
@@ -105,7 +109,8 @@ def getEqModel():
     return model
     
 
-def loss_func = torch.nn.functional.binary_cross_entropy(input, target)
+def entropy_loss(input,target):
+    return torch.nn.functional.binary_cross_entropy(input, target)
 
 def loss_batch(model, loss_func, xb, yb, opt=None):
     loss = loss_func(model(xb), yb)
@@ -134,8 +139,7 @@ def fit(epochs, model, loss_func, opt, train_dl, valid_dl):
         print(epoch, val_loss)
 
 
-if __name__ == "main":
-
+def get_data(train_ds, valid_ds, bs):
     x_train = np.array()
     eventFile = open("../cahuilla_events.txt","r")
     buf = csv.reader(eventFile)
@@ -159,7 +163,49 @@ if __name__ == "main":
         for i in range(len(st)):
             x_i.append(st[i])
         x_train.append(x_i)
+        
+    return (
+        DataLoader(train_ds, batch_size=bs, shuffle=True),
+        DataLoader(valid_ds, batch_size=bs * 2),
+    )
+
+if __name__ == "main":
 
     model = getEqModel()
     opt = optim.SGD(model.parameters(),lr=lr)
+
+    train_dl, valid_dl = get_data(train_ds, valid_ds, bs)
+
+    loss_func = entropy_loss
+
+    fit(epochs, model, loss_func, opt, train_dl, valid_dl)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
 
