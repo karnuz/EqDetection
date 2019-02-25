@@ -19,20 +19,16 @@ class EQ:
         self.latitudes = latitudes + latstep/2
         longitudes, longstep = np.linspace(region[2][0],region[2][1], dimensions[2],endpoint=False,retstep=True)
         self.longitudes = longitudes + longstep/2
-##        for i in range(dimensions[0]): #depth
-##            for j in range(dimensions[1]): #latitude
-##                for k in range(dimensions[2]): #longitude
-##                    grid[i][j][k] = (depths[i],latitudes[j],longitudes[k])
-##        self.grid = grid
 
     def labelProb(self,hypocenter,dimensions):
-        #region [[latitudemin,latitudemax],[longitudemin,longitudemax],[depthmin,depthmax]]
-        #dimensions: dimension of the discreteblock in which we calculate probability
+        '''region [[latitudemin,latitudemax],[longitudemin,longitudemax],[depthmin,depthmax]]
+        dimensions: dimension of the discreteblock in which we calculate probability'''
         pArray = np.empty([dimensions[0],dimensions[1],dimensions[2]])
         for i in range(dimensions[0]): #depth
             for j in range(dimensions[1]): #latitude
                 for k in range(dimensions[2]): #longitude
                     pArray[i][j][k] = self.pMag(hypocenter,(self.depths[i],self.latitudes[j],self.longitudes[k]))
+                    print(i,j,k,hypocenter)
         return pArray
         
     def pMag(self,hypocenter, point):
@@ -41,29 +37,15 @@ class EQ:
         
 
     def sqdistance(self,point1, point2):
-        #point[0]:depth, point[1]=phi  point[2]=theta
+        '''point[0]:depth, point[1]=phi  point[2]=theta'''
         R = 6378.137
         x1,y1,z1 = (R-point1[0])*np.cos(point1[1])*np.cos(point1[2]),(R-point1[0])*np.cos(point1[1])*np.sin(point1[2]),(R-point1[0]*np.sin(point1[1]))
         x2,y2,z2 = (R-point2[0])*np.cos(point2[1])*np.cos(point2[2]),(R-point2[0])*np.cos(point2[1])*np.sin(point2[2]),(R-point2[0]*np.sin(point2[1]))
-        print(x1,x2,y1,y2,z1,z2)
+        print(x1)
         xd = x2-x1
         yd = y2-y1
         zd = z2-z1
         return xd*xd + yd*yd + zd*zd
-
-
-    #def makeLabels():
-        ##read /Users/himanshusharma/karnuz/Rose/files
-        ## load label data
-        ## make a 1d array of probGrid
-
-##    class Lambda(nn.Module):
-##        def __init__(self, func):
-##            super().__init__()
-##            self.func = func
-##
-##        def forward(self, x):
-##            return self.func(x)
 
 
     def preprocess(self,x):
@@ -162,21 +144,10 @@ class EQ:
         labelpd = []
         for i in range(len(self.yb)):
             pd = self.labelProb(self.yb[i],self.dimensions)
+            print(self.yb[i])
             labelpd.append(pd)
         self.ypd = labelpd
 
-        #dt = DataLoad()
-        #dfx, dfy = dt.loadData()
-
-        #region = [(dt.latitudeMin,dt.latitudeMax),(dt.longitudeMin,dt.longitudeMax),(dt.depthMin,dt.depthMax)]
-        #self.makegrid(region,self.dimensions)
-
-        #yb = []
-        #for i in range(len(dfy)):
-         #   pd = self.labelProb(df.iloc[i].values,self.dimensions)
-          #  yb.append(pd)
-        #self.yb = yb
-        #self.xb = dfx.as_matrix()
 
     def getReadyData(self):
         dt = DataLoad()
@@ -198,8 +169,6 @@ class EQ:
 
         train_dl = DataLoader(train_ds, batch_size=8)
         valid_dl = DataLoader(valid_ds, batch_size=16)
-        
-#        train_dl, valid_dl = get_data(train_ds, valid_ds, bs)
 
         loss_func = entropy_loss
 
