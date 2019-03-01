@@ -28,7 +28,6 @@ class EQ:
             for j in range(dimensions[1]): #latitude
                 for k in range(dimensions[2]): #longitude
                     pArray[i][j][k] = self.pMag(hypocenter,(self.depths[i],self.latitudes[j],self.longitudes[k]))
-                    print(i,j,k,hypocenter)
         return pArray
         
     def pMag(self,hypocenter, point):
@@ -37,19 +36,23 @@ class EQ:
         
 
     def sqdistance(self,point1, point2):
-        '''point[0]:depth, point[1]=phi  point[2]=theta'''
+        '''point[0]:depth, point[1]=phi or latitude  point[2]=theta or longitude'''
         R = 6378.137
-        x1,y1,z1 = (R-point1[0])*np.cos(point1[1])*np.cos(point1[2]),(R-point1[0])*np.cos(point1[1])*np.sin(point1[2]),(R-point1[0]*np.sin(point1[1]))
-        x2,y2,z2 = (R-point2[0])*np.cos(point2[1])*np.cos(point2[2]),(R-point2[0])*np.cos(point2[1])*np.sin(point2[2]),(R-point2[0]*np.sin(point2[1]))
-        print(x1)
+        p = 2*np.pi/360
+        #print("point1 point2")
+        #print(point1, point2)
+        x1,y1,z1 = (R-point1[0])*np.cos(point1[1]*p)*np.cos(point1[2]*p),(R-point1[0])*np.cos(point1[1]*p)*np.sin(point1[2]*p),(R-point1[0]*np.sin(point1[1]*p))
+        x2,y2,z2 = (R-point2[0])*np.cos(point2[1]*p)*np.cos(point2[2]*p),(R-point2[0])*np.cos(point2[1]*p)*np.sin(point2[2]*p),(R-point2[0]*np.sin(point2[1]*p))
+        #print(x1,x2,y1,y2,z1,z2)
         xd = x2-x1
         yd = y2-y1
         zd = z2-z1
-        return xd*xd + yd*yd + zd*zd
-
+        sqd = xd*xd + yd*yd + zd*zd
+        #print(sqd)
+        return sqd
 
     def preprocess(self,x):
-        return x.view(3, 2772)
+        return x.view(201, 401)
 
 
     def getEqModel(self):
@@ -104,7 +107,7 @@ class EQ:
             nn.Conv2d(64, 32, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.Conv2d(32, 30, kernel_size=3, padding=1),
-            Lambda(lambda x: x.view(-1,128,80))
+            Lambda(lambda x: x.view(-1,30,30))
         )
         return model
         
@@ -175,31 +178,4 @@ class EQ:
         fit(epochs, model, loss_func, opt, train_dl, valid_dl)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         
-
