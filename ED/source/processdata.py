@@ -48,7 +48,10 @@ class ProcessData:
         
         self.boundingBox()
         self.filter_stations_in_region()
-
+        print('plotting')
+        self.plotStations()
+    
+    
     def loadData(self):
         eventFile = open(self.events_path,"r")
         buf = csv.reader(eventFile)
@@ -133,7 +136,9 @@ class ProcessData:
         buf = csv.reader(file)
         headers = next(buf)[0].split()
         print(headers)
+
         self.filtered_stations = []
+        self.station_location = {}
         
         # Latitude: 1 deg = 110.574 km
         # Longitude: 1 deg = 111.320*cos(latitude)
@@ -151,34 +156,54 @@ class ProcessData:
                 float(x[2]) >= (float(self.latitudeMin) - latitude_margin) and \
                 float(x[3]) <= (float(self.longitudeMax) + longitude_margin) and \
                 float(x[3]) <= (float(self.longitudeMin) - longitude_margin):
-                self.filtered_stations.append(x[1])
+                    
+                    self.filtered_stations.append(x[1])      # station names
+                    lat = float(x[2])
+                    long = float(x[3])
+                    self.station_location[x[1]] = (lat, long)  # station location coordinates
         print('total stations: ', i)
             
         return self.filtered_stations
 
-    def plotMap(self, points=[]):
-        
-        import numpy as np
-        import matplotlib.pyplot as plt
+    def plotStations(self, points=[]):
         from mpl_toolkits.basemap import Basemap
-        fig = plt.figure(figsize=(8, 8))
-        m = Basemap(projection='lcc', resolution=None,
-                    width=8E6, height=8E6,
-                    lat_0=45, lon_0=-100,)
-        m.etopo(scale=0.5, alpha=0.5)
+        import matplotlib.pyplot as plt
+        import numpy as np
+        
+        lats,lons,names = [],[],[]
+        
+        for name, loc in self.station_location.items():
+            lats.append(loc[0])
+            lons.append(loc[1])
+            names.append(name)
+    
+        # How much to zoom from coordinates (in degrees)
+        zoom_scale = 0
 
-        # Map (long, lat) to (x, y) for plotting
-        bounding_box = [[self.latitudeMin,self.longitudeMin],
-                        [self.latitudeMin,self.longitudeMax],
-                        [self.latitudeMax,self.longitudeMax],
-                        [self.latitudeMax,self.longitudeMin]]
-        for lat, long in bounding_box[:1]:
-            plt.plot(long, lat, 'ok', markersize=10)
-            plt.text(long, lat, ' box', fontsize=12);
-
-        for lat, long in points:
-            plt.plot(long, lat, 'ok', markersize=5)
-            plt.text(long, lat, ' Seattle', fontsize=12);
+        # Setup the bounding box for the zoom and bounds of the map
+        bbox = [min(lats)-zoom_scale,max(lats)+zoom_scale,\
+                min(lons)-zoom_scale,max(lons)+zoom_scale]
+    
+        plt.figure(figsize=(12,6))
+        # Define the projection, scale, the corners of the map, and the resolution.
+        m = Basemap(projection='merc',llcrnrlat=bbox[0],urcrnrlat=bbox[1],\
+                    llcrnrlon=bbox[2],urcrnrlon=bbox[3],lat_ts=10,resolution='i')
+    
+        # Draw coastlines and fill continents and water with color
+        m.drawcoastlines()
+        m.fillcontinents(color='peru',lake_color='dodgerblue')
+    
+        # draw parallels, meridians, and color boundaries
+        m.drawparallels(np.arange(bbox[0],bbox[1],(bbox[1]-bbox[0])/5),labels=[1,0,0,0])
+        m.drawmeridians(np.arange(bbox[2],bbox[3],(bbox[3]-bbox[2])/5),labels=[0,0,0,1],rotation=45)
+        m.drawmapboundary(fill_color='dodgerblue')
+    
+        # build and plot coordinates onto map
+        x,y = m(lons,lats)
+        m.plot(x,y,'r*',markersize=5)
+        plt.title("SCSN Station Distribution")
+        plt.savefig('scsn_station_plot.png', format='png', dpi=500)
+        plt.show()
 
 
     def getDimensions():
