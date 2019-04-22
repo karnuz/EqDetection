@@ -4,13 +4,14 @@ import torch.nn.functional as F
 from equtils import DataLoad
 import numpy as np
 
-
+#class containig the model architecture, and methods for loading data and training.
 class EQ:
 
     def __init__(self):
         self.r = 25   #radius of gaussian distribution
         self.dimensions = [30,30,30]
-        
+    
+    #makes a regular grid of size 'dimensions' and the region defined by 'region' which contains maximum and minium of latitude,longitude and depth.
     def makeGrid(self,region, dimensions):
         grid = np.empty(dimensions)
         depths, depthstep = np.linspace(region[0][0],region[0][1], dimensions[0],endpoint=False,retstep=True)
@@ -20,6 +21,7 @@ class EQ:
         longitudes, longstep = np.linspace(region[2][0],region[2][1], dimensions[2],endpoint=False,retstep=True)
         self.longitudes = longitudes + longstep/2
 
+    #depending on hypcenter, returns an array of probability value on the grid.
     def labelProb(self,hypocenter,dimensions):
         '''region [[latitudemin,latitudemax],[longitudemin,longitudemax],[depthmin,depthmax]]
         dimensions: dimension of the discreteblock in which we calculate probability'''
@@ -29,12 +31,13 @@ class EQ:
                 for k in range(dimensions[2]): #longitude
                     pArray[i][j][k] = self.pMag(hypocenter,(self.depths[i],self.latitudes[j],self.longitudes[k]))
         return pArray
-        
+    
+    #returns probability magnitude on 'point' given 'hypocenter'
     def pMag(self,hypocenter, point):
         d = self.sqdistance(hypocenter, point)
         return np.exp(-d/self.r)
         
-
+    # returns square of distance between point1 and point2
     def sqdistance(self,point1, point2):
         '''point[0]:depth, point[1]=phi or latitude  point[2]=theta or longitude'''
         R = 6378.137
@@ -51,10 +54,13 @@ class EQ:
         #print(sqd)
         return sqd
 
+    
+    
+    #preprocess the input to neural network
     def preprocess(self,x):
         return x.view(201, 401)
 
-
+    # returns neural network.
     def getEqModel(self):
 
         model = nn.Sequential(
@@ -125,7 +131,7 @@ class EQ:
             
         return loss.item(), len(xb)
 
-
+    #train routine
     def fit(self,epochs, model, loss_func, opt, train_dl, valid_dl):
         for epoch in range(epochs):
             model.train()
@@ -141,7 +147,7 @@ class EQ:
 
             print(epoch, val_loss)
 
-
+    #makes a grid
     def setitup(self):
         self.makeGrid(self.region,self.dimensions)
         labelpd = []
@@ -151,7 +157,7 @@ class EQ:
             labelpd.append(pd)
         self.ypd = labelpd
 
-
+    #loads the data and determines the region.
     def getReadyData(self):
         dt = DataLoad()
         self.xb, self.yb = dt.loadData()
