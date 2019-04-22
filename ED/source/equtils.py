@@ -13,11 +13,12 @@ from torch.utils.data import TensorDataset
 import itertools
 from obspy.core import UTCDateTime
 
-
+# class with methods to load data.
 class DataLoad:
     def __init__(self,eventfilepath = "../cahuilla_events.txt"):
         self.eventfileP = os.path.realpath("../cahuilla_events.txt")
-
+    
+    #loads the data
     def loadData(self):
         eventFile = open(self.eventfileP,"r")
         buf = csv.reader(eventFile)
@@ -67,6 +68,7 @@ class DataLoad:
         self.dfx = dfx
         self.dfy = dfy
         return np.asarray(data),label # return matrix of dfx and dfy ??
-
+    
+    #dertimes the region of hypocenters.
     def getDimensions(self):
         return [[self.depthMin,self.depthMax],[self.latitudeMin,self.latitudeMax],[self.longitudeMin,self.longitudeMax]]
